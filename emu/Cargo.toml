@@ -1,0 +1,17 @@
+[package]
+name = "emu"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+arch = { version = "0.1.0", path = "../arch" }
+
+winit = "0.29"
+wgpu = { version = "0.20", features = ["webgl"] }
+egui-winit = "0.28"
+egui-wgpu = { version = "0.28", features = ["winit"] }
+egui = "0.28"
+pollster = "0.3.0"
+spin_sleep_util = "0.1.1"
+itertools = "0.13.0"
+rfd = "0.14.1"
