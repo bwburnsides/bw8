@@ -2,9 +2,7 @@ mod instruction;
 mod register;
 
 pub use instruction::Instruction;
-pub use register::{
-    Register16, Register8, Pointer, RegisterFile,
-};
+pub use register::{Pointer, Register16, Register8, RegisterFile};
 
 use crate::*;
 use bus::*;
@@ -81,7 +79,7 @@ impl Status {
             this.privilege_level = PrivilegeLevel::User;
         };
 
-        this.nmi_active =  (byte & 0b1000_0000) != 0;
+        this.nmi_active = (byte & 0b1000_0000) != 0;
 
         this
     }
@@ -131,7 +129,7 @@ pub struct CpuState {
 
 pub struct Cpu<'a, B> {
     state: &'a mut CpuState,
-    bus: &'a mut B
+    bus: &'a mut B,
 }
 
 impl<'a, B: Bus> Cpu<'a, B> {
@@ -183,10 +181,7 @@ impl<'a, B: Bus> Cpu<'a, B> {
     fn pop_byte(&mut self) -> Byte {
         let sp = self.state.registers[Pointer::SP];
         self.state.registers[Pointer::SP] = increment_word(sp);
-        self.memory_read(
-            MemoryAddressKind::Data,
-            self.state.registers[Pointer::SP],
-        )
+        self.memory_read(MemoryAddressKind::Data, self.state.registers[Pointer::SP])
     }
 
     fn push_word(&mut self, data: Address) {
@@ -255,9 +250,12 @@ impl<'a, B: Bus> Cpu<'a, B> {
             Inst::ClearInterruptEnable => self.state.status.irq_enable = false,
             Inst::SetBankEnable => self.state.status.bank_enable = true,
             Inst::ClearBankEnable => self.state.status.bank_enable = false,
-            Inst::ReadBankRegister => self.state.registers[Register8::A] = self.state.bank_register.as_inner(),
+            Inst::ReadBankRegister => {
+                self.state.registers[Register8::A] = self.state.bank_register.as_inner()
+            }
             Inst::WriteBankRegister => {
-                self.state.bank_register = Nibble::new(self.state.registers[Register8::A] & 0b0000_1111).unwrap()
+                self.state.bank_register =
+                    Nibble::new(self.state.registers[Register8::A] & 0b0000_1111).unwrap()
             }
             Inst::Move8(dst, src) => self.state.registers[dst] = self.state.registers[src],
             Inst::Load8Immediate(dst, imm) => self.state.registers[dst] = imm,
@@ -270,7 +268,10 @@ impl<'a, B: Bus> Cpu<'a, B> {
                     ),
                     Mem8::RegisterOffset(ptr, offset) => self.memory_read(
                         MemoryAddressKind::Data,
-                        address_with_offset(self.state.registers[ptr], self.state.registers[offset]),
+                        address_with_offset(
+                            self.state.registers[ptr],
+                            self.state.registers[offset],
+                        ),
                     ),
                 }
             }
@@ -337,12 +338,14 @@ impl<'a, B: Bus> Cpu<'a, B> {
             Inst::Move16(dst, src) => self.state.registers[dst] = self.state.registers[src],
             Inst::Move16FromPair(dst, src) => {
                 let pair = match src {
-                    RegisterPair::Ab => {
-                        concatenate(self.state.registers[Register8::A], self.state.registers[Register8::B])
-                    }
-                    RegisterPair::Cd => {
-                        concatenate(self.state.registers[Register8::C], self.state.registers[Register8::D])
-                    }
+                    RegisterPair::Ab => concatenate(
+                        self.state.registers[Register8::A],
+                        self.state.registers[Register8::B],
+                    ),
+                    RegisterPair::Cd => concatenate(
+                        self.state.registers[Register8::C],
+                        self.state.registers[Register8::D],
+                    ),
                 };
                 self.state.registers[dst] = pair;
             }
@@ -398,8 +401,12 @@ impl<'a, B: Bus> Cpu<'a, B> {
                 self.state.registers[ptr] =
                     address_with_offset(self.state.registers[ptr], self.state.registers[offset])
             }
-            Inst::Inc16(dst) => self.state.registers[dst] = increment_word(self.state.registers[dst]),
-            Inst::Dec16(dst) => self.state.registers[dst] = decrement_word(self.state.registers[dst]),
+            Inst::Inc16(dst) => {
+                self.state.registers[dst] = increment_word(self.state.registers[dst])
+            }
+            Inst::Dec16(dst) => {
+                self.state.registers[dst] = decrement_word(self.state.registers[dst])
+            }
             Inst::Alu2(op, left, right) => {
                 let lhs = self.state.registers[left];
                 let rhs = match right {
@@ -449,11 +456,13 @@ impl<'a, B: Bus> Cpu<'a, B> {
 
                 match mode {
                     JumpMode::Relative(offset) => {
-                        self.state.program_counter = address_with_offset(self.state.program_counter, offset)
+                        self.state.program_counter =
+                            address_with_offset(self.state.program_counter, offset)
                     }
                     JumpMode::Absolute(addr) => self.state.program_counter = addr,
                     JumpMode::Indirect(base, offset) => {
-                        self.state.program_counter = address_with_offset(self.state.registers[base], offset)
+                        self.state.program_counter =
+                            address_with_offset(self.state.registers[base], offset)
                     }
                 }
             }
@@ -466,7 +475,9 @@ impl<'a, B: Bus> Cpu<'a, B> {
             }
             Inst::Jmp(condition, mode) => {
                 let target = match mode {
-                    JumpMode::Relative(offset) => address_with_offset(self.state.program_counter, offset),
+                    JumpMode::Relative(offset) => {
+                        address_with_offset(self.state.program_counter, offset)
+                    }
                     JumpMode::Absolute(addr) => addr,
                     JumpMode::Indirect(base, offset) => {
                         address_with_offset(self.state.registers[base], offset)
@@ -499,14 +510,14 @@ impl<'a, B: Bus> Cpu<'a, B> {
     }
 
     fn decode(&mut self) -> Instruction {
+        use Instruction as Inst;
+        use Memory8Mode as Mem8;
+        use Pointer as Ptr;
+        use Pointer::SP;
         use Register8::A;
         use Register8::B;
         use Register8::C;
         use Register8::D;
-        use Instruction as Inst;
-        use Memory8Mode as Mem8;
-        use Pointer as Ptr;
-        use Pointer::SP as SP;
 
         match self.fetch_byte() {
             0x00 => Inst::Nop,
@@ -794,13 +805,13 @@ impl<'a, B: Bus> Cpu<'a, B> {
     }
 
     fn decode_extended(&mut self) -> Instruction {
+        use Instruction as Inst;
+        use Memory16Mode as Mem16;
+        use Pointer as Ptr;
         use Register8::A;
         use Register8::B;
         use Register8::C;
         use Register8::D;
-        use Instruction as Inst;
-        use Memory16Mode as Mem16;
-        use Pointer as Ptr;
 
         match self.fetch_byte() {
             0x00 => Inst::Move16ToPair(RegisterPair::Ab, Register16::X),
@@ -813,24 +824,60 @@ impl<'a, B: Bus> Cpu<'a, B> {
             0x05 => Inst::Load16Immediate(Register16::Y, self.fetch_word()),
 
             0x06 => Inst::Load16(Register16::X, Mem16::Absolute(self.fetch_word())),
-            0x07 => Inst::Load16(Register16::X, Mem16::ConstantOffset(Ptr::X, self.fetch_byte())),
-            0x08 => Inst::Load16(Register16::X, Mem16::ConstantOffset(Ptr::Y, self.fetch_byte())),
-            0x09 => Inst::Load16(Register16::X, Mem16::ConstantOffset(Ptr::SP, self.fetch_byte())),
+            0x07 => Inst::Load16(
+                Register16::X,
+                Mem16::ConstantOffset(Ptr::X, self.fetch_byte()),
+            ),
+            0x08 => Inst::Load16(
+                Register16::X,
+                Mem16::ConstantOffset(Ptr::Y, self.fetch_byte()),
+            ),
+            0x09 => Inst::Load16(
+                Register16::X,
+                Mem16::ConstantOffset(Ptr::SP, self.fetch_byte()),
+            ),
 
             0x0A => Inst::Load16(Register16::Y, Mem16::Absolute(self.fetch_word())),
-            0x0B => Inst::Load16(Register16::Y, Mem16::ConstantOffset(Ptr::X, self.fetch_byte())),
-            0x0C => Inst::Load16(Register16::Y, Mem16::ConstantOffset(Ptr::Y, self.fetch_byte())),
-            0x0D => Inst::Load16(Register16::Y, Mem16::ConstantOffset(Ptr::SP, self.fetch_byte())),
+            0x0B => Inst::Load16(
+                Register16::Y,
+                Mem16::ConstantOffset(Ptr::X, self.fetch_byte()),
+            ),
+            0x0C => Inst::Load16(
+                Register16::Y,
+                Mem16::ConstantOffset(Ptr::Y, self.fetch_byte()),
+            ),
+            0x0D => Inst::Load16(
+                Register16::Y,
+                Mem16::ConstantOffset(Ptr::SP, self.fetch_byte()),
+            ),
 
             0x0E => Inst::Store16(Mem16::Absolute(self.fetch_word()), Register16::X),
-            0x0F => Inst::Store16(Mem16::ConstantOffset(Ptr::X, self.fetch_byte()), Register16::X),
-            0x10 => Inst::Store16(Mem16::ConstantOffset(Ptr::Y, self.fetch_byte()), Register16::X),
-            0x11 => Inst::Store16(Mem16::ConstantOffset(Ptr::SP, self.fetch_byte()), Register16::X),
+            0x0F => Inst::Store16(
+                Mem16::ConstantOffset(Ptr::X, self.fetch_byte()),
+                Register16::X,
+            ),
+            0x10 => Inst::Store16(
+                Mem16::ConstantOffset(Ptr::Y, self.fetch_byte()),
+                Register16::X,
+            ),
+            0x11 => Inst::Store16(
+                Mem16::ConstantOffset(Ptr::SP, self.fetch_byte()),
+                Register16::X,
+            ),
 
             0x12 => Inst::Store16(Mem16::Absolute(self.fetch_word()), Register16::Y),
-            0x13 => Inst::Store16(Mem16::ConstantOffset(Ptr::X, self.fetch_byte()), Register16::Y),
-            0x14 => Inst::Store16(Mem16::ConstantOffset(Ptr::Y, self.fetch_byte()), Register16::Y),
-            0x15 => Inst::Store16(Mem16::ConstantOffset(Ptr::SP, self.fetch_byte()), Register16::Y),
+            0x13 => Inst::Store16(
+                Mem16::ConstantOffset(Ptr::X, self.fetch_byte()),
+                Register16::Y,
+            ),
+            0x14 => Inst::Store16(
+                Mem16::ConstantOffset(Ptr::Y, self.fetch_byte()),
+                Register16::Y,
+            ),
+            0x15 => Inst::Store16(
+                Mem16::ConstantOffset(Ptr::SP, self.fetch_byte()),
+                Register16::Y,
+            ),
 
             0x16 => Inst::Lea(Ptr::X, LeaMode::Register(A)),
             0x17 => Inst::Lea(Ptr::X, LeaMode::Register(B)),
@@ -1305,21 +1352,23 @@ impl CpuState {
                                 trace.add(&inst);
                                 match action {
                                     EnvironmentAction::Halt => break,
-                                    EnvironmentAction::Break => return (trace, ReachedBreakpoint::Did),
+                                    EnvironmentAction::Break => {
+                                        return (trace, ReachedBreakpoint::Did)
+                                    }
                                     EnvironmentAction::WriteByte(val) => print!("{}", val as char),
                                 }
                             }
                         }
                     }
-                },
+                }
                 CycleKind::Interrupt(InterruptKind::Nmi) => {
                     if cpu.state.status.nmi_active {
                         println!("Received nested NMI; system resetting.");
-                        cpu.reset();  // TODO: Should reset entire system not just CPU
+                        cpu.reset(); // TODO: Should reset entire system not just CPU
                     } else {
                         cpu.service_interrupt(InterruptKind::Nmi);
                     }
-                },
+                }
                 CycleKind::Interrupt(kind) => cpu.service_interrupt(kind),
                 CycleKind::Reset => cpu.reset(),
                 CycleKind::Instruction => match cpu.execute() {
@@ -1395,7 +1444,6 @@ impl std::ops::IndexMut<Architectural16> for CpuState {
         }
     }
 }
-
 
 #[inline]
 const fn split_bytes(word: Address) -> (Byte, Byte) {

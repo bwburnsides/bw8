@@ -1,5 +1,5 @@
-use crate::*;
 use crate::cpu::*;
+use crate::*;
 
 #[derive(Copy, Clone)]
 pub enum MemoryAddressKind {

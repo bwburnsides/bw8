@@ -28,8 +28,6 @@
 #const WHITE   = 0b111_111_11 
 
 boot:
-    out [EMULATOR_BREAKPOINT], a
-
     ; Initialize stack so that interrupts can be serviced,
     ; functions can be called, and stack operations can be made.
     ld x, #0xFFFF
@@ -172,12 +170,10 @@ irq_palette_foolery:
 
     ld b, #BLACK
     ld c, #WHITE
-    out [EMULATOR_BREAKPOINT], a
 
     ld x, #IO_PALETTE_BASE
     in a, [x, 0]
 
-    out [EMULATOR_BREAKPOINT], a
     cmp a, b
     br.eq.abs .to_white
 

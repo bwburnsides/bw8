@@ -108,6 +108,13 @@ impl EmulatorState {
         use egui::style::*;
         use egui::*;
 
+        SidePanel::new(Side::Right, "disasm")
+            .show_separator_line(false)
+            .resizable(false)
+            .show_inside(ui, |ui| {
+                
+            });
+
         SidePanel::new(Side::Right, "ctrl")
             .show_separator_line(false)
             .resizable(false)
@@ -275,7 +282,7 @@ impl EmulatorState {
                     ui.separator();
 
                     ScrollArea::new([false, true]).show(ui, |ui| {
-                        for addr in (u16::MIN..=0x4000).step_by(16) {
+                        for addr in (u16::MIN..=0xFFFF).step_by(16) {
                             use std::fmt::Write;
 
                             // Length of one line is 6 characters for `ADDR |` + 3 characters for each byte.

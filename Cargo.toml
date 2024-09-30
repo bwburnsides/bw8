@@ -1,5 +1,8 @@
 [workspace]
 members=[
+    "uasm",
     "arch",
+    "isa",
     "emu",
+    "asm",
 ]

@@ -1,5 +1,25 @@
-use crate::cpu::*;
-use crate::*;
+use crate::{Address, Byte};
+
+#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq)]
+pub enum Pointer {
+    X,
+    Y,
+    SP,
+}
+
+#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq)]
+pub enum Register8 {
+    A,
+    B,
+    C,
+    D,
+}
+
+#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq)]
+pub enum Register16 {
+    X,
+    Y,
+}
 
 #[derive(Clone, Copy, Debug, Hash, PartialEq, Eq)]
 pub enum Memory8Mode {
