@@ -18,10 +18,10 @@ Implements an assembler capable of compiling instruction mnemonics to machine co
 
 Implements an emulation of the computer system; the processor and it's peripherals.
 
-## `uasm`
+## `uarch`
 
 Provides types modeling the processor's micro-architectural features; that is, the processor's internal state vector, control bus, and other internal registers.
 
-Implements a microcode assembler capable of producing micro-architectural control bus words for all state vector values. These consist of the current opcode, status flags, the sequencer value, and other elements.
+## `uasm`
 
-*TODO*: Break this model into a `uarch` model to create a distinction similar to that of `arch` versus `asm`.
+Implements a microcode assembler capable of producing micro-architectural control bus words for all state vector values. These consist of the current opcode, status flags, the sequencer value, and other elements.

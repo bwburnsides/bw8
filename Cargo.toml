@@ -5,4 +5,5 @@ members=[
     "isa",
     "emu",
     "asm",
+    "uarch",
 ]
